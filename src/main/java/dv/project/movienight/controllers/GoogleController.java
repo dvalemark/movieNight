@@ -16,6 +16,8 @@ import dv.project.movienight.GoogleAPI.MovieTime;
 import dv.project.movienight.entities.GoogleUser;
 import dv.project.movienight.repositories.GoogleUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -33,8 +35,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 @RestController
 public class GoogleController {
     GoogleAPIHelper googleAPIHelper = new GoogleAPIHelper();
-    GoogleUser googleUser;
-    Calendar calendar;
+
 
     @Autowired
     private GoogleUserRepository googleUserRepository;
@@ -97,27 +98,32 @@ public class GoogleController {
         else{
             System.out.println("User can only be added once");
         }
-        googleUser = googleUserRepository.findByUserId(userId);
 
         return "OK";
     }
 
-    @RequestMapping (value = "/addEvent", method = POST)
-    public String addingEvent(@RequestBody MovieTime date) throws IOException {
-        //ToDo: get start and end as req params!!
-        LocalDateTime start = date.getStart();
-        LocalDateTime end = date.getEnd();
+    @RequestMapping (value = "/addEvent/{movieTime}/{startTime}/{title}", method = POST)
+    public String addingEvent(@PathVariable String movieTime, @PathVariable String startTime, @PathVariable String title  ) throws IOException {
+        String nrMinutes =movieTime.substring(0,3);
+        int minutes = Integer.valueOf(nrMinutes);
+        DateTime start = new DateTime(startTime);
+        long end = start.getValue()+minutes*60*1000;
+        DateTime endTime = new DateTime(end);
+
 
         EventAdder eventAdder = new EventAdder();
         List<GoogleUser> emailList = googleUserRepository.getAllByUserIdNotNull();
-        return eventAdder.addEvent(calendar, "primary", emailList, start, end);
+        for ( GoogleUser user: emailList) {
+            eventAdder.addEvent(googleAPIHelper.getCalendar(user), "primary", emailList, start, endTime, title);
+        }
+        return "OK";
     }
 
     @RequestMapping(value = "/getFreeTimes", method = GET)
-    public List<MovieTime> getFreeTimes() {
-        List<MovieTime> times = new ArrayList<>();
+    public ResponseEntity<List<LocalDateTime>> getFreeTimes() {
+        List<LocalDateTime> times = new ArrayList<>();
 
-        List<Event> events = null;
+        List<Event> events = new ArrayList<>();
         for (GoogleUser user: googleUserRepository.getAllByUserIdNotNull()) {
             Calendar cal = googleAPIHelper.getCalendar(user);
             Events responseEvents = googleAPIHelper.getEvents(cal);
@@ -126,25 +132,33 @@ public class GoogleController {
                         .collect(Collectors.toList());
             }
             }
-
-        LocalDateTime startTimeLocalDate = LocalDate.now().atTime(17, 00);
+        LocalDateTime startTimeLocalDate = LocalDate.now().atTime(19, 00);
         LocalDateTime endTimeLocalDate = LocalDate.now().atTime(23, 00);
         long startTime = startTimeLocalDate.toInstant(UTC).toEpochMilli();
         long endTime = endTimeLocalDate.toInstant(UTC).toEpochMilli();
         int i = 0;
         long day = 86400000;
         while( i < 7){
+
             long startValue = startTime + i*day;
             long endValue = endTime + i*day;
-            if( googleAPIHelper.checkFreeTime(events, startValue, endValue)){
+
+            if(events == null){
+                times.add(Instant.ofEpochMilli(startValue).atZone(ZoneOffset.UTC).toLocalDateTime() );
+            }
+             else if( googleAPIHelper.checkFreeTime(events, startValue, endValue)){
                 LocalDateTime s = Instant.ofEpochMilli(startValue).atZone(ZoneOffset.UTC).toLocalDateTime();
-                LocalDateTime e = Instant.ofEpochMilli(endValue).atZone(ZoneOffset.UTC).toLocalDateTime();
-                times.add( new MovieTime(s,e));
+             //   LocalDateTime e = Instant.ofEpochMilli(endValue).atZone(ZoneOffset.UTC).toLocalDateTime();
+                times.add(s);
             }
             i++;
         }
 
-        return times;
+        if (times.size()==0){
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        return new ResponseEntity<>(times, HttpStatus.OK);
     }
 
 }

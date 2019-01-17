@@ -9,9 +9,6 @@ import com.google.api.services.calendar.model.EventReminder;
 import dv.project.movienight.entities.GoogleUser;
 
 import java.io.IOException;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 
@@ -19,19 +16,20 @@ public class EventAdder {
 
     //ToDo: Should i add 1 event/calendar or 1 event with all attendees?
 
-    public String addEvent(Calendar calendar, String calendarName, List<GoogleUser> emailList, LocalDateTime startTime, LocalDateTime finishTime) throws IOException {
+    public String addEvent(Calendar calendar, String calendarName, List<GoogleUser> emailList, DateTime startTime, DateTime finishTime, String title) throws IOException {
+
         Event event = new Event()
-                .setSummary("Watch ")
-                .setDescription("Summary: ");
+                .setSummary("Watch "+title)
+                .setDescription("Movie Night with friends");
 
         EventDateTime start = new EventDateTime()
-                .setDateTime(new DateTime(startTime.toString()))
+                .setDateTime(startTime)
                 .setTimeZone("GMT +01:00");
 
         event.setStart(start);
 
         EventDateTime end = new EventDateTime()
-                .setDateTime(new DateTime(finishTime.toString()))
+                .setDateTime(finishTime)
                 .setTimeZone("GMT +01:00");
 
         event.setEnd(end);
@@ -53,13 +51,12 @@ public class EventAdder {
                 .insert(calendarId, event)
                 .execute();
 
-        System.out.printf("Event created\n");
 
         return "OK";
     }
 
     public EventAttendee[] addEventAttendees(List<GoogleUser>emailList){
-        EventAttendee[] attendees = new EventAttendee[emailList.size()-1];
+        EventAttendee[] attendees = new EventAttendee[emailList.size()];
         int i=0;
         for(GoogleUser user : emailList) {
             attendees[i] = new EventAttendee().setEmail(user.getEmail());

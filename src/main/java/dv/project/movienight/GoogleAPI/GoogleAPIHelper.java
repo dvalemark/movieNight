@@ -1,6 +1,5 @@
 package dv.project.movienight.GoogleAPI;
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
@@ -12,9 +11,8 @@ import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.Events;
 import dv.project.movienight.entities.GoogleUser;
 
-import java.io.FileReader;
+
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class GoogleAPIHelper {

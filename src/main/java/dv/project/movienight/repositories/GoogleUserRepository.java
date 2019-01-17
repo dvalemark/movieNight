@@ -11,5 +11,6 @@ import java.util.List;
 public interface GoogleUserRepository extends JpaRepository <GoogleUser, Long> {
     GoogleUser findByUserId(String id);
     List<GoogleUser> getAllByUserIdNotNull();
+    GoogleUser getDistinctTopByEmailTrue();
     GoogleUser findByAccessToken(String accessToken);
 }
